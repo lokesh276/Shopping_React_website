@@ -23,6 +23,15 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+
     - name: Install dependencies
       run: npm install
+
+
+     - name: Build a project 
+     - run: npm run dev 
+
+
+     - name: Deploy to Vercel 
+       run: npx vercel --prod --token={{secrets.VERCEL_TOKEN}}
 
