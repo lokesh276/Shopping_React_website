@@ -1,35 +1,59 @@
 pipeline {
     agent any
 
+    environment {
+        SONARQUBE = 'SonarQube'  // Name of the SonarQube instance you configured
+        SONAR_TOKEN = credentials('sonar-token')  // Your SonarQube token saved in Jenkins credentials
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                // Clean workspace before checkout for a fresh start
-                cleanWs()
                 checkout scm
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                // Install npm dependencies
-                sh 'npm install'
+                script {
+                    // Install your project dependencies (e.g., npm install for Node.js)
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // Run SonarQube Scanner
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=YourProjectKey \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://localhost:9000 \
+                        -Dsonar.login=$SONAR_TOKEN
+                    '''
+                }
             }
         }
 
         stage('Build') {
             steps {
-                // Run build script if available; you can replace with your build/start command
-                // If you only want to run a simple start script, change this accordingly
-                sh 'npm run build || echo "No build script found, skipping"'
+                script {
+                    // Build your project (e.g., npm run build)
+                    sh 'npm run build'
+                }
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline finished.'
-            cleanWs()
+        success {
+            echo 'Build and analysis completed successfully!'
+        }
+        failure {
+            echo 'Build or analysis failed.'
         }
     }
 }
+
