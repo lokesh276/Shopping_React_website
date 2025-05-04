@@ -1,0 +1,48 @@
+name: SonarQube and Jenkins Trigger
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the 'main' branch (adjust if needed)
+
+jobs:
+  sonar_analysis:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'  # Specify Node.js version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Add this secret in GitHub settings
+        run: |
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+          unzip sonar-scanner-cli-*.zip
+          export PATH="$PATH:$(pwd)/sonar-scanner-5.0.1.3006-linux/bin"
+          sonar-scanner \
+            -Dsonar.projectKey=Shopping_React_website \
+            -Dsonar.sources=src \
+            -Dsonar.host.url=http://localhost:9000 \
+            -Dsonar.login=$SONAR_TOKEN
+
+  trigger_jenkins:
+    name: Trigger Jenkins Build
+    needs: sonar_analysis  # Only trigger Jenkins after SonarQube analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Jenkins Job
+        run: |
+          curl -X POST http://<YOUR-JENKINS-IP>:8080/job/YOUR_JOB_NAME/build \
+          --user your-jenkins-user:${{ secrets.JENKINS_TOKEN }}  # Jenkins API token secret
+
